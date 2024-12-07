@@ -43,3 +43,25 @@ Install required packages:
 Run the extractor by providing a URL:
 
 ##### python extract.py {URL}
+
+## Note
+
+
+1. Website https://www.cialdnb.com/pt-br/ does not have an image from example
+https://www.cialdnb.com/wp-content/uploads/2020/01/logo-cialdnb-color.png .
+
+   Now, logo on the website is in the SVG format which does not have an actual URL.
+Inline SVGs are not linked to URL. Instead, they are embedded directly in the HTML document.
+I implemented a method to scrape such SVG images due to this website and saved an image in root directory which
+can be opened in the browser.
+
+
+
+   
+2. https://petrobras.com.br/en/contact-us/ returned 404 as they probably had some kind of rebranding,
+   link navigates to page on which is written "Conteúdo indisponível"
+   I also tried with some other links to make sure script works as expected, such as :
+   https://www.b2match.com/about,
+   https://digacon-software.com/en/contact,
+   https://gnkdinamo.hr/
+

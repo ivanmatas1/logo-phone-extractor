@@ -21,7 +21,7 @@ def extract_phone_numbers(html_content: str) -> Optional[str]:
     for match in list(text_matches) + element_matches:
         number = match.group().strip()
         if is_valid_number(number) and check_context(text_content, text_content.find(number),
-                                                     text_content.find(number) + len(number)):
+                                                     text_content.find(number) + len(number), number):
             validated_numbers.add(number)
 
     return ', '.join(validated_numbers) if validated_numbers else None
@@ -57,8 +57,12 @@ def extract_numbers_from_elements(soup: BeautifulSoup) -> List[re.Match]:
 
 
 def is_valid_number(number: str) -> bool:
-    """ Check if a number is valid by checking its length."""
+    """ Check if a number is valid by checking its length and starting characters."""
     if '.' in number:
+        return False
+    if number.startswith('-'):
+        return False
+    if re.match(r'0{3,}', number):
         return False
 
     validated_number = re.sub(r'[^\d()+]', '', number)
@@ -69,10 +73,24 @@ def is_valid_number(number: str) -> bool:
     return True
 
 
-def check_context(html_content: str, start_index: int, end_index: int) -> bool:
-    """ Check text before and after a potential phone number to find phone-related keywords."""
+def check_context(html_content: str, start_index: int, end_index: int, number: str) -> bool:
+    """Check the text surrounding a potential phone number to ensure it is indeed a valid phone number"""
+    # Extract character before and after the number, if they are letters, return false -> z38599324b
+    surrounding_chars = html_content[max(0, start_index - 1):min(len(html_content), end_index + 1)]
+    if re.search(r'[A-Za-z]{2,}', surrounding_chars):
+        return False
+
     start = max(0, start_index - CONTEXT_RANGE)
     end = min(len(html_content), end_index + CONTEXT_RANGE)
     context = html_content[start:end].lower()
 
-    return any(keyword in context for keyword in CONTEXT_KEYWORDS)
+    has_keywords = any(keyword in context for keyword in CONTEXT_KEYWORDS)
+
+    # Finds numbers like 123-456-7890, +123456, (123) 456-7890 so even if there are no matching keywords in the context
+    is_phone_like = re.fullmatch(r'[+\d() -]{6,}', number)
+    is_metadata = re.fullmatch(r'[A-Za-z0-9-._]+', number) is not None
+
+    if is_phone_like and (has_keywords or not is_metadata):
+        return True
+
+    return False
